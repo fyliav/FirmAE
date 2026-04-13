@@ -251,7 +251,7 @@ def main():
                 firmwares = []
                 for directory, sub_directory, filename_list in os.walk(firmware_path):
                     for filename in filename_list:
-                        firmwares.append(os.path.join(directory, filename))
+                        firmwares.append([brand, os.path.join(directory, filename)])
 
             else:
                 # this accepts firmware list file

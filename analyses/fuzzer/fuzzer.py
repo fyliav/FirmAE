@@ -795,7 +795,7 @@ def main():
 if __name__ == "__main__":
     argc = len(sys.argv)
     if argc != 7:
-        print("usage: fuzzer.py [mode] [brand] [iid] [target]")
+        print("usage: fuzzer.py [mode] [brand] [iid] [target] [work_dir] [log_dir]")
         exit()
 
     MODE = sys.argv[1]

