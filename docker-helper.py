@@ -41,10 +41,9 @@ class docker_helper:
     def stop_core(self, container_name):
         return sp.check_output("docker stop {}".format(container_name), shell=True)
 
-    def run_core(self, idx, mode, brand, firmware_path):
+    def run_core(self, idx, mode, brand, firmware_path, docker_name):
         firmware_root = os.path.dirname(firmware_path)
         firmware = os.path.basename(firmware_path)
-        docker_name = 'docker{}_{}'.format(idx, firmware)
         cmd = """docker run -dit --rm \\
                 -v /dev:/dev \\
                 -v {0}:/work/FirmAE \\
@@ -93,7 +92,7 @@ class docker_helper:
                 f.readline()
                 last_line = f.readline()
                 if last_line.find("container failed") != -1:
-                    logging.error("[-] %s container failed to connect to the hosts' postgresql".format(docker_name))
+                    logging.error("[-] %s container failed to connect to the hosts' postgresql", docker_name)
                     return docker_name
 
         if not iid:
@@ -132,7 +131,7 @@ class docker_helper:
                     os.remove(image_name)
 
         if emulation_result:
-            logging.info("[+] %s emulation finished. (%0.4fs)", docker_name, time_elapsed)
+            logging.info("[+] %s (%d) emulation finished. (%0.4fs)", docker_name, iid, time_elapsed)
 
             # analyses
             if mode == "-a":
@@ -141,12 +140,12 @@ class docker_helper:
                 time_elapsed = time.time() - t1
 
                 if analyses_result:
-                    logging.info("[+] %s analysis finished. (%0.4fs)", docker_name, time_elapsed)
+                    logging.info("[+] %s (%d) analysis finished. (%0.4fs)", docker_name, iid, time_elapsed)
                 else:
-                    logging.error("[-] %s analysis failed. (%0.4fs)", docker_name, time_elapsed)
+                    logging.error("[-] %s (%d) analysis failed. (%0.4fs)", docker_name, iid, time_elapsed)
 
         else:
-            logging.error("[-] %s emulation failed. (%0.4fs)", docker_name, time_elapsed)
+            logging.error("[-] %s (%d) emulation failed. (%0.4fs)", docker_name, iid, time_elapsed)
 
         return docker_name
 
@@ -175,7 +174,7 @@ class docker_helper:
             result_path = "{}/scratch/{}/result".format(self.firmae_root, iid)
             timeout = 2400
         else:
-            result_path = "{}/analyses/analyses_log/{}/{}/result".format(self.firmae_root, brand, iid)
+            result_path = "{}/scratch/{}/analysis_log/result".format(self.firmae_root, iid)
             timeout = 3600
 
         for i in range(timeout):
@@ -208,9 +207,15 @@ def print_usage(argv0):
     return
 
 def runner(args):
-    (idx, dh, mode, brand, firmware) = args
-    if os.path.isfile(firmware):
-        docker_name = dh.run_core(idx, mode, brand, firmware)
+    (idx, dh, mode, brand, firmware_path) = args
+    if os.path.isfile(firmware_path):
+        firmware = os.path.basename(firmware_path)
+        docker_name = 'docker{}_{}'.format(idx, firmware)
+        try:
+            dh.run_core(idx, mode, brand, firmware_path, docker_name)
+        except:
+            import traceback
+            traceback.print_exc()
         dh.stop_core(docker_name)
     else:
         logging.error("[-] Can't find firmware file")
@@ -246,12 +251,13 @@ def main():
                 firmwares = []
                 for directory, sub_directory, filename_list in os.walk(firmware_path):
                     for filename in filename_list:
-                        firmwares.append(os.path.join(directory, filename))
+                        firmwares.append([brand, os.path.join(directory, filename)])
 
             else:
                 # this accepts firmware list file
                 with open(firmware_path, 'r') as f:
                     firmwares = f.read().splitlines()
+                firmwares = list(map(lambda x: x.split(','), firmwares))
 
             num_cores = mp.cpu_count()
             if len(firmwares) < num_cores:
@@ -262,6 +268,7 @@ def main():
 
             p = mp.Pool(num_cores)
             for idx, firmware in enumerate(firmwares):
+                brand, firmware = firmware
                 arg=(idx, dh, mode, brand, firmware)
                 p.apply_async(runner, args=(arg,))
                 time.sleep(1)
