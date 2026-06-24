@@ -33,8 +33,11 @@ RUN apt-get install -y openjdk-8-jdk
 # for qemu
 RUN apt-get install -y qemu-system-arm qemu-system-mips qemu-system-x86 qemu-utils
 
-# for analyzer
-RUN python3 -m pip install selenium bs4 requests future paramiko pysnmp==4.4.6 pycryptodome
+# for analyzer: install pinned python deps from the single source of truth.
+# build-essential + libglib2.0-dev are needed to build bluepy (sdist-only).
+RUN apt-get install -y build-essential libglib2.0-dev
+COPY requirements.txt /tmp/requirements.txt
+RUN python3 -m pip install -r /tmp/requirements.txt
 # google chrome
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
 RUN echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list
@@ -43,12 +46,12 @@ RUN apt-get install -y google-chrome-stable
 RUN apt-get install -y ntfs-3g
 RUN ln -s /bin/ntfs-3g /bin/mount.ntfs-3g
 
-COPY ./sudo /usr/bin/sudo
+COPY core/sudo /usr/bin/sudo
 RUN chmod 777 /usr/bin/sudo
 
 RUN mkdir -p /work/FirmAE
 RUN mkdir -p /work/firmwares
-COPY unstuff /usr/local/bin/
+COPY core/unstuff /usr/local/bin/
 
 ENV USER=root
 ENV FIRMAE_DOCKER=true

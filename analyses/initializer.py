@@ -7,6 +7,7 @@ import selenium
 import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 
 # typical netgear firmwares...
 # "No, I want to configure the Internet connection myself."
@@ -45,7 +46,7 @@ class Initializer:
         options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--screen-size=1200x600")
-        self.driver = webdriver.Chrome(chrome_options=options)
+        self.driver = webdriver.Chrome(options=options)
         if self.auth:
             self.driver.get("http://" + self.auth + "@" + self.ip)
         else:
@@ -79,7 +80,7 @@ class Initializer:
 
     def GetAlert(self):
         try:
-            alert = self.driver.switch_to_alert()
+            alert = self.driver.switch_to.alert
             return alert
         except:
             return None
@@ -91,16 +92,16 @@ class Initializer:
         self.driver.close()
 
     def SwitchFrame(self, pattern):
-        self.driver.switch_to_default_content()
+        self.driver.switch_to.default_content()
         if pattern.search(self.driver.page_source):
             return True
 
         for frame_name in ["frame", "iframe"]:
-            for frame in self.driver.find_elements_by_tag_name(frame_name):
-                self.driver.switch_to_frame(frame)
+            for frame in self.driver.find_elements(By.TAG_NAME, frame_name):
+                self.driver.switch_to.frame(frame)
                 if pattern.search(self.driver.page_source):
                     return True
-                self.driver.switch_to_default_content()
+                self.driver.switch_to.default_content()
 
         return False
 
@@ -108,16 +109,16 @@ class Initializer:
         return page.count('"radio"', 0, netgear_pattern.search(page).start()) - 1
 
     def ClickRadio(self, idx):
-        self.driver.find_elements_by_xpath("//*[@type='radio']")[idx].click()
+        self.driver.find_elements(By.XPATH, "//*[@type='radio']")[idx].click()
 
     def ClickNext(self):
         if (
             self.driver.page_source.find("btnsContainer_div") != -1
         ):  # wnr2000v3, WNDR3800, JNR3210, R6200v2
-            self.driver.find_element_by_id("btnsContainer_div").click()
+            self.driver.find_element(By.ID, "btnsContainer_div").click()
         else:  # WNR3500Lv2, WNDR3400v3, R8000
-            self.driver.find_element_by_xpath("//*[@type='button']").click()
-        alert = self.driver.switch_to_alert()
+            self.driver.find_element(By.XPATH, "//*[@type='button']").click()
+        alert = self.driver.switch_to.alert
         alert.accept()
 
 

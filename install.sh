@@ -1,7 +1,7 @@
 #!/bin/bash
 
 sudo apt update
-sudo apt install -y curl wget tar git ruby python3 python3-pip bc
+sudo apt install -y curl wget tar git ruby python3 python3-pip bc build-essential libglib2.0-dev
 sudo python3 -m pip install --upgrade pip
 sudo python3 -m pip install coloredlogs
 
@@ -43,12 +43,15 @@ sudo apt install -y python3-magic openjdk-8-jdk unrar
 
 # for analyzer, initializer
 sudo apt install -y python3-bs4
-python3 -m pip install selenium
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i google-chrome-stable_current_amd64.deb; sudo apt -fy install
 rm google-chrome-stable_current_amd64.deb
 python3 -m pip install -r ./analyses/routersploit/requirements.txt
 cd ./analyses/routersploit && patch -p1 < ../routersploit_patch && cd -
+
+# install FirmAE's pinned python deps last so they win over routersploit's
+# older pins (e.g. requests==2.21.0, which would otherwise downgrade urllib3)
+python3 -m pip install -r ./requirements.txt
 
 # for qemu
 sudo apt install -y qemu-system-arm qemu-system-mips qemu-system-x86 qemu-utils
